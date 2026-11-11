@@ -1,0 +1,12 @@
+# Nur die App wird veröffentlicht. Alles andere bleibt lokal (Backups, PDFs, Notizen).
+/*
+!/.gitignore
+!/.nojekyll
+!/README.md
+!/index.html
+!/icon.svg
+!/css/
+!/js/
+!/tests/
+!/tools/
+!/supabase/
