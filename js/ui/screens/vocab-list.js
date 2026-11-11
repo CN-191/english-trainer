@@ -16,7 +16,7 @@
     const option = (cur) => ([v, l]) => h('option', { value: v, selected: cur === v }, l);
     // Filter: Niveaus und die Units des Buchs („u3“ = StartUp 6, Unit 3)
     const units = TT.BOOK_SU6 ? TT.BOOK_SU6.units.map((t, i) => ['u' + (i + 1), TT.BOOK_SU6.title + ' · Unit ' + (i + 1)]) : [];
-    const levelSel = h('select', { 'aria-label': 'Niveau' }, [['all', 'Alle Niveaus']].concat(TT.VOCAB_LEVELS.map((l) => [l, l]), units).map(option(filter.level)));
+    const levelSel = h('select', { 'aria-label': 'Niveau' }, [['all', 'Alle Niveaus']].concat(TT.VOCAB_LEVELS.map((l) => [l, l]), [[TT.OWN_LEVEL, 'Eigene Wörter']], units).map(option(filter.level)));
     const statusSel = h('select', { 'aria-label': 'Status' }, STATUS_FILTER.map(option(filter.status)));
     const results = h('div');
 
@@ -38,7 +38,7 @@
           href: '#/vokabeln/wort/' + encodeURIComponent(e.id),
           title: v.en + (e.sense ? ' (' + e.sense + ')' : ''),
           subtitle: v.de,
-          right: (e.level === TT.BOOK_LEVEL ? 'U' + e.book.u : e.level) + ' · ' + STATUS_DE[D.status(app.vocab, e.id)],
+          right: (e.own ? 'Eigenes' : e.level === TT.BOOK_LEVEL ? 'U' + e.book.u : e.level) + ' · ' + STATUS_DE[D.status(app.vocab, e.id)],
         });
       });
       results.replaceChildren(ui.group(ui.plural(hits.length, 'Wort', 'Wörter'), rows.length ? rows : [ui.row({ title: 'Keine Treffer' })],
@@ -66,6 +66,7 @@
     const base = TT.vocabEntry(id);
     const nav = app.vocabSession && app.vocabSession.editing === id ? { back: '#/vokabeln/lernen', backLabel: 'Zurück zum Lernen' } : { back: '#/vokabeln/liste', backLabel: 'Wortliste' };
     if (!base) return ui.page(ui.header('Wort nicht gefunden', nav));
+    if (base.own) return TT.vocabScreens.ownWord(id); // eigene Wörter haben ihre eigene Seite (alles änderbar, löschbar)
     const v = D.view(app.vocab, base);
     const edited = D.isEdited(app.vocab, id);
     const suspended = D.isSuspended(app.vocab, id);

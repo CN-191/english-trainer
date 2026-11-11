@@ -29,8 +29,8 @@ test('vocabStore: sanitize verwirft Ungültiges', () => {
   assert.strictEqual(VS.sanitize({ settings: { newPerDay: -1 } }).settings.newPerDay, 20);
 });
 
-test('vocabStore: 11 Dokumente, Karten landen im Dokument ihres Niveaus und ihrer Richtung', () => {
-  assert.strictEqual(VS.DOCS.length, 11);
+test('vocabStore: 12 Dokumente, Karten landen im Dokument ihres Niveaus und ihrer Richtung', () => {
+  assert.strictEqual(VS.DOCS.length, 12);
   assert.deepStrictEqual(VS.DOCS.slice(0, 10), ['vocab-A1-ed', 'vocab-A1-de', 'vocab-A2-ed', 'vocab-A2-de', 'vocab-B1-ed', 'vocab-B1-de', 'vocab-B2-ed', 'vocab-B2-de', 'vocab-edits', 'vocab-meta']);
   assert.strictEqual(VS.cardDoc('about-adj:de'), 'vocab-B1-de');
   assert.strictEqual(VS.cardDoc('zone-n:ed'), 'vocab-B2-ed');

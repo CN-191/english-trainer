@@ -29,6 +29,10 @@
         subtitle: vs.book.learned + ' von ' + vs.book.total + ' Buchwörtern gelernt' +
           (TT.app.vocab.book.on ? ' · bis ' + TT.bookPlace(TT.app.vocab.book.unit, TT.app.vocab.book.lesson) + ': ' + vs.book.reachedLearned + ' von ' + vs.book.reached : ''),
         right: Math.round((vs.book.learned / vs.book.total) * 100) + ' %',
+      })] : [], vs.levels[TT.OWN_LEVEL] && vs.levels[TT.OWN_LEVEL].total ? [ui.row({
+        title: 'Eigene Wörter',
+        subtitle: vs.levels[TT.OWN_LEVEL].learned + ' von ' + pl(vs.levels[TT.OWN_LEVEL].total, 'Wort', 'Wörtern') + ' gelernt' + (TT.deck.ownOn(TT.app.vocab) ? '' : ' · ausgeschaltet'),
+        right: Math.round((vs.levels[TT.OWN_LEVEL].learned / vs.levels[TT.OWN_LEVEL].total) * 100) + ' %',
       })] : [], [
         ui.row({ title: 'Heute', subtitle: pl(vs.today.r, 'Wiederholung', 'Wiederholungen') + ' · ' + pl(vs.today.n + vs.today.n2, 'neue Karte', 'neue Karten') }),
         ui.row({ title: 'Trefferquote (30 Tage)', right: vs.retention === null ? '–' : Math.round(vs.retention * 100) + ' %' }),

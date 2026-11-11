@@ -8,7 +8,7 @@
   const S = TT.vocabStore;
   const DAY = 86400000;
   const DAY_START_HOUR = 4;
-  const LEVEL_RANK = { A1: 0, A2: 1, B1: 2, B2: 3, SU6: 4 };
+  const LEVEL_RANK = { OWN: -1, A1: 0, A2: 1, B1: 2, B2: 3, SU6: 4 };
 
   // Lerntag als fortlaufende Zahl (Ortszeit, Wechsel um 4 Uhr; sommerzeitfest).
   function dayOf(ms) {
@@ -45,11 +45,13 @@
     const b = vocab.book;
     return !!(e.book && b && b.on && (e.book.u < b.unit || (e.book.u === b.unit && e.book.l <= b.lesson)));
   };
+  // Eigene Wörter sind eine eigene Kategorie mit eigenem Schalter (Standard: an)
+  const ownOn = (vocab) => !(vocab.ownSet && vocab.ownSet.on === false);
   // Aktiv: nicht ausgesetzt und Niveau eingeschaltet oder im Buch schon erreicht (neue Buchwörter nur so)
-  const isActive = (vocab, e) => !isSuspended(vocab, e.id) && (!!vocab.settings.levels[e.level] || inBook(vocab, e));
+  const isActive = (vocab, e) => !isSuspended(vocab, e.id) && (e.own ? ownOn(vocab) : !!vocab.settings.levels[e.level] || inBook(vocab, e));
   // Wiederholen: zusätzlich alle Buchwörter – schon begonnene Karten laufen weiter, auch wenn die Stelle im Buch
   // zurückgesetzt oder der Buch-Wortschatz ausgeschaltet wurde (neue Karten gibt es dann nicht)
-  const isReviewable = (vocab, e) => !isSuspended(vocab, e.id) && (!!vocab.settings.levels[e.level] || !!e.book);
+  const isReviewable = (vocab, e) => !isSuspended(vocab, e.id) && (e.own ? ownOn(vocab) : !!vocab.settings.levels[e.level] || !!e.book);
 
   // Karte heute schon gezeigt (für „Geschwister zurückstellen“)?
   function seenToday(vocab, id, dir, today) {
@@ -117,10 +119,12 @@
     const st = dayStats(vocab, today);
     let budget = Math.max(0, Math.floor(vocab.settings.newPerDay) - st.n);
     let budget2 = Math.max(0, Math.floor(vocab.settings.newPerDay) - st.n2);
-    // Neue Wörter: zuerst das Buch bis zur aktuellen Stelle (Buchreihenfolge), danach wie eingestellt
+    // Neue Wörter: zuerst die eigenen (in der Reihenfolge des Anlegens), dann das Buch bis zur aktuellen Stelle
+    // (Buchreihenfolge), danach wie eingestellt
+    const own = entries.filter((e) => e.own);
     const fromBook = entries.filter((e) => inBook(vocab, e)).sort((a, b) => a.book.seq - b.book.seq);
-    const taken = new Set(fromBook.map((e) => e.id));
-    const order = fromBook.concat(newOrder(entries, vocab.settings.order).filter((e) => !taken.has(e.id)));
+    const taken = new Set(own.concat(fromBook).map((e) => e.id));
+    const order = own.concat(fromBook, newOrder(entries, vocab.settings.order).filter((e) => !taken.has(e.id)));
     for (const e of order) {
       if (budget <= 0 && budget2 <= 0) break;
       if (!isActive(vocab, e)) continue;
@@ -220,6 +224,30 @@
     return ['vocab-meta'];
   }
 
+  // Eigenes Wort anlegen (id = null) oder ändern; liefert { id, docs }
+  function setOwn(vocab, id, fields, now) {
+    const f = {};
+    for (const n of S.OWN_FIELDS) f[n] = String(fields[n] || '').trim();
+    const key = id || 'own_' + now.toString(36) + Math.random().toString(36).slice(2, 6) + '-w';
+    const old = vocab.own[key];
+    vocab.own[key] = { t: now, c: old ? old.c : now, f };
+    return { id: key, docs: [S.OWN_DOC] };
+  }
+
+  // Eigenes Wort löschen: Der Eintrag bleibt als „gelöscht“ stehen, damit es auf anderen Geräten nicht zurückkommt.
+  function removeOwn(vocab, id, now) {
+    const old = vocab.own[id];
+    if (!old) return [];
+    vocab.own[id] = { t: now, c: old.c, f: null };
+    return [S.OWN_DOC];
+  }
+
+  // Kategorie „Eigene Wörter“ ein- oder ausschalten
+  function setOwnOn(vocab, on, now) {
+    vocab.ownSet = { t: now, on: !!on };
+    return [S.OWN_DOC];
+  }
+
   // Stelle im Buch ändern, z. B. {unit: 1, lesson: 3} oder {on: false}
   function setBook(vocab, patch, now) {
     vocab.book = Object.assign({}, vocab.book || S.defaultBook(), patch, { t: now });
@@ -239,7 +267,7 @@
   function stats(vocab, entries, now) {
     const today = dayOf(now);
     const levels = {};
-    for (const lv of S.LEVELS.concat(S.BOOK_LEVEL)) levels[lv] = { learned: 0, total: 0 };
+    for (const lv of S.LEVELS.concat(S.BOOK_LEVEL, S.OWN_LEVEL)) levels[lv] = { learned: 0, total: 0 };
     // Buch: alle Buchwörter (auch gemeinsame) und die bis zur aktuellen Stelle
     const book = { learned: 0, total: 0, reached: 0, reachedLearned: 0 };
     const forecast = [0, 0, 0, 0, 0, 0, 0];
@@ -367,6 +395,6 @@
 
   TT.deck = {
     dayOf, dayStart, dayKey, params, cardOf, view, dirs, newOrder, plan, pick, answer, undo, markKnown,
-    setSuspended, setEdit, restoreEdit, setSettings, setBook, status, stats, forecastFinish, preview, isSuspended, isEdited, inBook,
+    setSuspended, setEdit, restoreEdit, setSettings, setBook, setOwn, removeOwn, setOwnOn, ownOn, status, stats, forecastFinish, preview, isSuspended, isEdited, inBook,
   };
 })(globalThis.TT = globalThis.TT || {});

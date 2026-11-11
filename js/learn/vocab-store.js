@@ -12,15 +12,22 @@
   const DIRS = ['ed', 'de'];
   const DOCS = [];
   for (const lv of LEVELS) for (const d of DIRS) DOCS.push('vocab-' + lv + '-' + d);
-  DOCS.push('vocab-edits', 'vocab-meta', 'vocab-book');
+  DOCS.push('vocab-edits', 'vocab-meta', 'vocab-book', 'vocab-own');
   const BOOK_DOC = 'vocab-book';
   const BOOK_LEVEL = 'SU6';
+  // Eigene Wörter: Karten (Niveau OWN, beide Richtungen), die Wörter selbst und der Schalter „Eigene Wörter lernen“
+  const OWN_DOC = 'vocab-own';
+  const OWN_LEVEL = 'OWN';
+  const OWN_FIELDS = ['en', 'de', 'pos', 'hint', 'ex', 'exDe'];
+  const OWN_POS = ['', 'n', 'v', 'adj', 'adv', 'phrase'];
+  const OWN_MAX = 2000;
   const BOOK_UNITS = 10;
   const BOOK_LESSONS = 4;
   const EDIT_FIELDS = ['de', 'hint', 'ex', 'exDe', 'emoji'];
   const MIN = 60000;
   const CARD_KEY = /^[a-z0-9_]+-[a-z_]+:(ed|de)$/;
   const ENTRY_ID = /^[a-z0-9_]+-[a-z_]+$/;
+  const OWN_ID = /^own_[a-z0-9]{4,24}-w$/; // eigene Wörter: passt in ENTRY_ID, kann nie mit einem Listenwort zusammenfallen
   const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
   const BAD_KEYS = ['__proto__', 'constructor', 'prototype'];
   const MAX_T = 4e12; // Zeitstempel-Obergrenze (Jahr 2096): eine falsch gehende Uhr darf keinen Eintrag für immer festschreiben
@@ -42,8 +49,13 @@
     return { t: 0, on: true, unit: 1, lesson: 1 };
   }
 
+  // Schalter für die Kategorie „Eigene Wörter“
+  function defaultOwnSet() {
+    return { t: 0, on: true };
+  }
+
   function defaults() {
-    return { cards: {}, edits: {}, suspended: {}, settings: defaultSettings(), days: {}, book: defaultBook() };
+    return { cards: {}, edits: {}, suspended: {}, settings: defaultSettings(), days: {}, book: defaultBook(), own: {}, ownSet: defaultOwnSet() };
   }
 
   // Karte kompakt: [fällig(Min), Stabilität, Schwierigkeit, Wiederholungen, Vergessen, Status,
@@ -110,10 +122,41 @@
     if (typeof b.on === 'boolean') out.book.on = b.on;
     if (Number.isInteger(b.unit) && b.unit >= 1 && b.unit <= BOOK_UNITS) out.book.unit = b.unit;
     if (Number.isInteger(b.lesson) && b.lesson >= 1 && b.lesson <= BOOK_LESSONS) out.book.lesson = b.lesson;
+    // Eigene Wörter: { t (geändert), c (angelegt), f: { en, de, pos, hint, ex, exDe } | null (gelöscht) }
+    if (isObj(src.own)) {
+      let n = 0;
+      for (const k of Object.keys(src.own)) {
+        const e = src.own[k];
+        if (!okKey(k) || !OWN_ID.test(k) || !isObj(e) || !isTime(e.t) || n >= OWN_MAX) continue;
+        const c = isTime(e.c) ? e.c : e.t;
+        if (e.f === null) {
+          out.own[k] = { t: e.t, c, f: null };
+          n++;
+          continue;
+        }
+        if (!isObj(e.f) || !OWN_FIELDS.every((f) => typeof e.f[f] === 'string' && e.f[f].length <= 500)) continue;
+        if (!e.f.en.trim() || !e.f.de.trim() || e.f.en.length > 100 || !OWN_POS.includes(e.f.pos)) continue;
+        const f = {};
+        for (const name of OWN_FIELDS) f[name] = e.f[name];
+        out.own[k] = { t: e.t, c, f };
+        n++;
+      }
+    }
+    const os = isObj(src.ownSet) ? src.ownSet : {};
+    if (isTime(os.t)) out.ownSet.t = os.t;
+    if (typeof os.on === 'boolean') out.ownSet.on = os.on;
     return out;
   }
 
-  const docOf = (level, dir) => (level === BOOK_LEVEL ? BOOK_DOC : 'vocab-' + level + '-' + dir);
+  // Eigene Wörter als Liste für TT.setOwnVocab, in der Reihenfolge des Anlegens (gelöschte fehlen)
+  function ownRows(vocab) {
+    return Object.keys(vocab.own || {})
+      .filter((id) => vocab.own[id].f)
+      .sort((a, b) => vocab.own[a].c - vocab.own[b].c || (a < b ? -1 : 1))
+      .map((id) => Object.assign({ id }, vocab.own[id].f));
+  }
+
+  const docOf = (level, dir) => (level === BOOK_LEVEL ? BOOK_DOC : level === OWN_LEVEL ? OWN_DOC : 'vocab-' + level + '-' + dir);
 
   // Dokument, in dem eine Karte liegt (über das Niveau laut Wortliste), sonst null.
   function cardDoc(cardKey) {
@@ -128,6 +171,7 @@
     if (name === 'vocab-meta') return { suspended: vocab.suspended, settings: vocab.settings, days: vocab.days };
     const cards = {};
     for (const k of Object.keys(vocab.cards)) if (cardDoc(k) === name) cards[k] = vocab.cards[k];
+    if (name === OWN_DOC) return { cards, own: vocab.own, ownSet: vocab.ownSet };
     return name === BOOK_DOC ? { cards, book: vocab.book } : { cards };
   }
 
@@ -144,6 +188,10 @@
       for (const k of Object.keys(vocab.cards)) if (cardDoc(k) === name) delete vocab.cards[k];
       for (const k of Object.keys(clean.cards)) if (cardDoc(k) === name) vocab.cards[k] = clean.cards[k];
       if (name === BOOK_DOC) vocab.book = clean.book;
+      if (name === OWN_DOC) {
+        vocab.own = clean.own;
+        vocab.ownSet = clean.ownSet;
+      }
     }
   }
 
@@ -178,6 +226,10 @@
       return { suspended: pickNewer(A.suspended, B.suspended, (e) => e.t), settings, days: mergeDays(A.days, B.days) };
     }
     const cards = pickNewer(A.cards, B.cards, modOf);
+    if (name === OWN_DOC) {
+      const ownSet = B.ownSet.t > A.ownSet.t || (B.ownSet.t === A.ownSet.t && JSON.stringify(B.ownSet) > JSON.stringify(A.ownSet)) ? B.ownSet : A.ownSet;
+      return { cards, own: pickNewer(A.own, B.own, (e) => e.t), ownSet };
+    }
     if (name !== BOOK_DOC) return { cards };
     const book = B.book.t > A.book.t || (B.book.t === A.book.t && JSON.stringify(B.book) > JSON.stringify(A.book)) ? B.book : A.book;
     return { cards, book };
@@ -209,6 +261,7 @@
 
   TT.vocabStore = {
     KEY, LEVELS, DIRS, DOCS, EDIT_FIELDS, BOOK_DOC, BOOK_LEVEL, BOOK_UNITS, BOOK_LESSONS,
+    OWN_DOC, OWN_LEVEL, OWN_FIELDS, OWN_POS, OWN_MAX, defaultOwnSet, ownRows,
     defaults, defaultBook, sanitize, encode, decode, modOf, docOf, cardDoc, part, applyPart, mergePart, mergeAll, load, save,
   };
 })(globalThis.TT = globalThis.TT || {});

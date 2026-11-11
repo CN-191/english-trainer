@@ -150,7 +150,7 @@
       redrawTimer = null;
       app.applyTheme();
       // Laufende Übung, Lernrunde und Eingabefelder nicht unter den Fingern neu aufbauen.
-      if (/^#\/?(training|einstellungen|grammatik\/training|geschichte(\/|$)|vokabeln\/(lernen|wort|einstellungen|liste))/.test(location.hash)) return;
+      if (/^#\/?(training|einstellungen|grammatik\/training|geschichte(\/|$)|vokabeln\/(lernen|wort|einstellungen|liste|eigene))/.test(location.hash)) return;
       TT.router.refresh();
     }, 0);
   }

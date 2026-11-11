@@ -13,7 +13,10 @@
     aux: 'Hilfsverb', art: 'Artikel', inf: 'Infinitiv-Partikel', phrase: 'Wendung',
   };
   const BOOK_LEVEL = 'SU6';
+  const OWN_LEVEL = 'OWN'; // eigene Wörter des Nutzers (IDs beginnen mit „own_“)
   const bookRows = [];
+  let ownRows = []; // eigene Wörter des angemeldeten Nutzers, siehe TT.setOwnVocab
+  let ownKey = '[]';
 
   const content = {};
   const duplicates = [];
@@ -27,6 +30,7 @@
       content[c.id] = c;
     }
     entries = null;
+    fixed = null;
     byId = null;
   };
 
@@ -40,6 +44,7 @@
       }
     }
     entries = null;
+    fixed = null;
     byId = null;
     levelById = null;
   };
@@ -53,10 +58,33 @@
     return out;
   }
 
-  // Alle lernbaren Einträge: Oxford in PDF-Reihenfolge, danach neue Buchwörter (eingefroren, zwischengespeichert).
+  // Eigene Wörter setzen: [{ id, en, de, pos, hint, ex, exDe }] in der Reihenfolge, in der sie angelegt wurden.
+  // Ändert sich nichts, bleibt die Liste dieselbe (die Planung merkt sich die Reihenfolge an der Liste).
+  TT.setOwnVocab = (rows) => {
+    const key = JSON.stringify(rows);
+    if (key === ownKey) return;
+    ownKey = key;
+    ownRows = rows;
+    entries = null;
+    byId = null;
+  };
+
+  // Oxford in PDF-Reihenfolge, danach neue Buchwörter (eingefroren, zwischengespeichert).
+  let fixed = null;
+  // Alle lernbaren Einträge: die festen und dahinter die eigenen Wörter.
   TT.vocabEntries = () => {
     if (entries) return entries;
-    entries = [];
+    if (!fixed) fixed = fixedEntries();
+    entries = fixed.concat(ownRows.map((r) => Object.freeze({
+      id: r.id, en: r.en, pos: r.pos || '', level: OWN_LEVEL, sense: '',
+      de: r.de, hint: r.hint || '', ex: r.ex || '', exDe: r.exDe || '', emoji: '', exWord: '',
+      book: null, def: '', own: true,
+    })));
+    return entries;
+  };
+
+  function fixedEntries() {
+    const entries = [];
     const info = bookInfo();
     const inList = new Set();
     const make = (id, en, pos, level, sense, c) => {
@@ -77,7 +105,7 @@
       if (!inList.has(id) && content[id]) entries.push(make(id, r.en, r.pos, BOOK_LEVEL, '', content[id]));
     }
     return entries;
-  };
+  }
 
   // Alle Einträge aus dem Buch (gemeinsame und neue) in Buchreihenfolge.
   TT.bookEntries = () => TT.vocabEntries().filter((e) => e.book).sort((a, b) => a.book.seq - b.book.seq);
@@ -92,6 +120,7 @@
 
   // Niveau einer Eintrags-ID laut Wortliste (auch ohne Inhalt), sonst null.
   TT.vocabLevel = (id) => {
+    if (typeof id === 'string' && id.startsWith('own_')) return OWN_LEVEL;
     if (!levelById) {
       levelById = {};
       for (const row of TT.VOCAB_LIST || []) levelById[row[0]] = row[3];
@@ -100,9 +129,10 @@
     return levelById[id] || null;
   };
 
-  TT.vocabPosLabel = (pos) => pos.split('/').map((p) => POS_DE[p] || p).join(' / ');
+  TT.vocabPosLabel = (pos) => (pos ? pos.split('/').map((p) => POS_DE[p] || p).join(' / ') : '');
   TT.vocabContentIds = () => Object.keys(content);
   TT.vocabDuplicates = () => duplicates.slice();
   TT.VOCAB_LEVELS = LEVELS;
   TT.BOOK_LEVEL = BOOK_LEVEL;
+  TT.OWN_LEVEL = OWN_LEVEL;
 })(globalThis.TT = globalThis.TT || {});

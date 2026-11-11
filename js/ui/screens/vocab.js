@@ -34,7 +34,7 @@
   }
 
   // Niveau-Bezeichnung: neue Buchwörter heißen „StartUp 6“ statt „SU6“
-  const levelLabel = (e) => (e.level === TT.BOOK_LEVEL ? (TT.BOOK_SU6 ? TT.BOOK_SU6.title : e.level) : e.level);
+  const levelLabel = (e) => (e.own ? 'Eigenes Wort' : e.level === TT.BOOK_LEVEL ? (TT.BOOK_SU6 ? TT.BOOK_SU6.title : e.level) : e.level);
 
   // „Wo bin ich im Buch?“ – Schalter, Unit und Lesson; gemeinsam für Vokabeln und Unterricht.
   function bookPicker() {
@@ -72,17 +72,19 @@
     const c = p.counts;
     const todo = c.review + c.fresh + c.learning;
     const st = D.stats(app.vocab, entries, now);
-    const learned = TT.VOCAB_LEVELS.concat(TT.BOOK_LEVEL).reduce((s, lv) => s + (st.levels[lv] ? st.levels[lv].learned : 0), 0);
+    const learned = TT.VOCAB_LEVELS.concat(TT.BOOK_LEVEL, TT.OWN_LEVEL).reduce((s, lv) => s + (st.levels[lv] ? st.levels[lv].learned : 0), 0);
     const book = app.vocab.book;
-    const anyLevel = TT.VOCAB_LEVELS.some((lv) => app.vocab.settings.levels[lv]) || (book.on && st.book.total > 0);
+    const own = st.levels[TT.OWN_LEVEL] || { learned: 0, total: 0 };
+    const ownOn = D.ownOn(app.vocab);
+    const anyLevel = TT.VOCAB_LEVELS.some((lv) => app.vocab.settings.levels[lv]) || (book.on && st.book.total > 0) || (ownOn && own.total > 0);
     const waiting = waitingForCloud();
     const card = waiting ? loadingCard() : null;
     const tile = (n, label) => h('div.stat-tile', null, h('b', null, String(n)), h('span', null, label));
     const gear = h('a.icon-btn', { href: '#/vokabeln/einstellungen', 'aria-label': 'Vokabel-Einstellungen' }, ui.icon('gear'));
 
     let doneText = 'Neue Wörter gibt es morgen wieder.';
-    if (!anyLevel) doneText = 'Schalte in den Einstellungen ein Niveau oder die Wörter aus dem Buch ein.';
-    else if (!TT.VOCAB_LEVELS.some((lv) => app.vocab.settings.levels[lv]) && !p.nextDue && st.book.reached === st.book.learned) {
+    if (!anyLevel) doneText = 'Schalte in den Einstellungen ein Niveau, die Wörter aus dem Buch oder deine eigenen Wörter ein.';
+    else if (!TT.VOCAB_LEVELS.some((lv) => app.vocab.settings.levels[lv]) && !p.nextDue && st.book.reached === st.book.learned && !(ownOn && own.total > own.learned)) {
       doneText = 'Alle Buchwörter bis ' + TT.bookPlace(book.unit, book.lesson) + ' sind gelernt. Stelle im Buch weiterrücken oder ein Niveau einschalten.';
     }
     else if (p.nextDue) {
@@ -108,6 +110,11 @@
           subtitle: book.on ? TT.bookPlace(book.unit, book.lesson) + ' · ' + st.book.reachedLearned + ' von ' + st.book.reached + ' Wörtern gelernt' : 'Buch-Wortschatz ausgeschaltet',
           href: '#/vokabeln/einstellungen',
         }) : null,
+        waiting ? null : ui.row({
+          title: 'Eigene Wörter',
+          subtitle: !own.total ? 'Wörter aus dem Unterricht selbst anlegen' : ownOn ? own.learned + ' von ' + ui.plural(own.total, 'Wort', 'Wörtern') + ' gelernt' : ui.plural(own.total, 'Wort', 'Wörter') + ' · ausgeschaltet',
+          href: '#/vokabeln/eigene',
+        }),
         ui.row({ title: 'Wortliste', subtitle: 'Suchen, bearbeiten, aussetzen', href: '#/vokabeln/liste' }),
         ui.row({ title: 'Einstellungen', subtitle: ui.plural(app.vocab.settings.newPerDay, 'neues Wort', 'neue Wörter') + ' pro Tag', href: '#/vokabeln/einstellungen' }),
         ui.row({ title: 'Statistik', subtitle: 'Gelernte Wörter, fällige Karten', href: '#/statistik' }),
@@ -148,6 +155,11 @@
       ui.group('Neue Wörter pro Tag', [h('div.row', null, input)],
         { footer: 'Jede ganze Zahl ab 0. Fällige Wiederholungen kommen immer dazu.' }),
       ui.group('Niveaus', TT.VOCAB_LEVELS.map(levelRow), { footer: 'Ausgeschaltete Niveaus werden weder neu gelernt noch wiederholt.' }),
+      ui.group('Eigene Wörter', [
+        h('label.row', null, h('span.row-main', null, h('span.row-title', null, 'Eigene Wörter lernen')),
+          ui.toggle(D.ownOn(app.vocab), (on) => app.saveVocab(D.setOwnOn(app.vocab, on, Date.now())), 'Eigene Wörter lernen')),
+        ui.row({ href: '#/vokabeln/eigene', title: 'Wörter anlegen und bearbeiten' }),
+      ], { footer: 'Eigene Kategorie, unabhängig von den Niveaus. Neue eigene Wörter kommen vor allen anderen dran.' }),
       ui.group('Reihenfolge neuer Wörter', [h('div.row', null, ui.segmented([['level', 'Nach Niveau'], ['mixed', 'Gemischt']], s.order, (v) => changeSettings({ order: v })))],
         { footer: 'Nach Niveau: erst alle A1-Wörter, dann A2 und so weiter. Gemischt: alle eingeschalteten Niveaus durcheinander.' }));
   }
@@ -159,6 +171,7 @@
       if (param === 'lernen') return TT.vocabScreens.run();
       if (param === 'liste') return TT.vocabScreens.list();
       if (param === 'einstellungen') return settings();
+      if (param === 'eigene') return TT.vocabScreens.own();
       if (param && param.startsWith('wort/')) return TT.vocabScreens.word(param.slice(5));
       return overview();
     },

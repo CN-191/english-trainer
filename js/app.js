@@ -18,7 +18,12 @@
         this.vocabSaveWarned = true;
         TT.ui.toast('Vokabel-Fortschritt konnte auf diesem Gerät nicht gespeichert werden (Speicher voll?).');
       }
+      if (docs.includes(TT.vocabStore.OWN_DOC)) this.refreshOwn();
       for (const name of docs) TT.sync.touch(name);
+    },
+    // Eigene Wörter des Lernstands in die Wortliste übernehmen (nach jeder Änderung daran)
+    refreshOwn() {
+      TT.setOwnVocab(TT.vocabStore.ownRows(this.vocab));
     },
     exportText() {
       return JSON.stringify(Object.assign({}, this.state, { vocab: this.vocab }));
@@ -32,6 +37,7 @@
       if (raw.vocab) {
         TT.vocabStore.mergeAll(this.vocab, raw.vocab);
         this.saveVocab(TT.vocabStore.DOCS);
+        this.refreshOwn();
       }
     },
     applyTheme() {
@@ -55,6 +61,7 @@
     },
   };
   TT.app = app;
+  app.refreshOwn();
 
   // Jedes Vokabel-Dokument wird pro Eintrag zusammengeführt (siehe vocabStore.mergePart).
   function registerVocabSync() {
@@ -64,6 +71,7 @@
         apply: (obj) => {
           TT.vocabStore.applyPart(app.vocab, name, obj);
           TT.vocabStore.save(app.vocab);
+          if (name === TT.vocabStore.OWN_DOC) app.refreshOwn();
         },
         merge: (a, b) => TT.vocabStore.mergePart(name, a, b),
       });

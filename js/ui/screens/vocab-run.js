@@ -7,14 +7,15 @@
 
   // Beispielsatz mit hervorgehobenem Lernwort
   function exSentence(entry) {
-    return h('p.flash-ex', { lang: 'en' }, TT.vocabText.split(entry.ex, entry).map((p) => (p.t === 'word' ? h('mark', null, p.v) : p.v)));
+    if (!entry.ex) return null; // eigene Wörter dürfen ohne Beispielsatz sein
+    return h('p.flash-ex', { lang: 'en' },TT.vocabText.split(entry.ex, entry).map((p) => (p.t === 'word' ? h('mark', null, p.v) : p.v)));
   }
 
   function meta(entry, dir) {
     return h('div.flash-meta', null,
       h('span.level', null, TT.vocabScreens.levelLabel(entry)),
       entry.book ? h('span', null, 'Unit ' + entry.book.u + ' · L' + entry.book.l) : null,
-      h('span', null, TT.vocabPosLabel(entry.pos)),
+      entry.pos ? h('span', null, TT.vocabPosLabel(entry.pos)) : null,
       h('span', null, dir === 'ed' ? 'Englisch → Deutsch' : 'Deutsch → Englisch'));
   }
 
@@ -30,7 +31,7 @@
   // Buchwörter zeigen zusätzlich die englische Definition
   function back(entry, dir) {
     const def = entry.def ? h('p.flash-def', { lang: 'en' }, entry.def) : null;
-    if (dir === 'ed') return [h('div.flash-sep'), h('p.flash-answer', { lang: 'de' }, entry.de), def, h('p.flash-exde', { lang: 'de' }, entry.exDe)];
+    if (dir === 'ed') return [h('div.flash-sep'), h('p.flash-answer', { lang: 'de' }, entry.de), def, entry.exDe ? h('p.flash-exde', { lang: 'de' }, entry.exDe) : null];
     return [h('div.flash-sep'), h('p.flash-answer', { lang: 'en' }, entry.en), def, exSentence(entry)];
   }
 
