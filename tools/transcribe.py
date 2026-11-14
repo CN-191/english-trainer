@@ -38,6 +38,26 @@ def decode_stereo(data):
     return a[0], a[1]
 
 
+def pieces(seg):
+    # Lange Abschnitte an Satzenden und Sprechpausen teilen, damit sich beide Sprecher sauber abwechseln
+    words = seg.words or []
+    if not words:
+        text = seg.text.strip()
+        return [(seg.start, seg.end, text)] if text else []
+    out, cur = [], []
+    for i, w in enumerate(words):
+        cur.append(w)
+        nxt = words[i + 1] if i + 1 < len(words) else None
+        end_of_sentence = w.word.strip().endswith(('.', '?', '!')) and len(cur) >= 4
+        pause = nxt is not None and nxt.start - w.end > 1.0
+        if nxt is None or end_of_sentence or pause or len(cur) >= 30:
+            text = ''.join(x.word for x in cur).strip()
+            if text:
+                out.append((cur[0].start, cur[-1].end, text))
+            cur = []
+    return out
+
+
 def log(msg):
     print(time.strftime('%H:%M:%S'), msg, flush=True)
 
@@ -62,12 +82,10 @@ def main():
                 segs, _ = model.transcribe(
                     audio, language='en', beam_size=5, vad_filter=True,
                     vad_parameters={'min_silence_duration_ms': 500},
-                    condition_on_previous_text=False, initial_prompt=PROMPT)
+                    condition_on_previous_text=False, initial_prompt=PROMPT, word_timestamps=True)
                 for s in segs:
-                    text = s.text.strip()
-                    if text:
-                        segments.append({'start': round(offset + s.start, 2), 'end': round(offset + s.end, 2),
-                                         'ch': ch, 'text': text})
+                    for start, end, text in pieces(s):
+                        segments.append({'start': round(offset + start, 2), 'end': round(offset + end, 2), 'ch': ch, 'text': text})
             log('%s fertig (%d/%d, bis %d min)' % (part, i, len(parts), (offset + length) // 60))
             offset += length
 
