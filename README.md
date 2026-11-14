@@ -8,7 +8,7 @@ Lern-App für Englisch: 12 Zeitformen, Grammatik-Themen (typische Fehler für De
 
 ## Betrieb der Web-Version
 
-- Seite: GitHub Pages aus dem Zweig `main`. Ein `git push` veröffentlicht.
+- Seite: GitHub Pages aus dem Zweig `main`. Vor dem Veröffentlichen `node tools/stamp.js` (Versionsnummern gegen alte Dateien im Browser-Cache), dann `git push`.
 - Supabase (kostenloser Tarif): Tabellen und Rechte in `supabase/migrations/`, Kontoverwaltung in `supabase/functions/accounts/`.
 - Das erste Konto legt sich auf der Anmeldeseite selbst an und ist Verwalter. Weitere Konten vergibt der Verwalter unter Einstellungen → Konten verwalten.
 - Im kostenlosen Tarif pausiert Supabase ein Projekt nach etwa einer Woche ohne Zugriffe. Dann ist keine Anmeldung möglich, bis das Projekt im Supabase-Dashboard wieder gestartet wird („Restore project“). Der Lernstand bleibt dabei erhalten.

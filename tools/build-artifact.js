@@ -9,7 +9,8 @@ if (!out) {
   console.error('Zieldatei angeben');
   process.exit(1);
 }
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8').replace(/\r\n/g, '\n');
+// Versionsnummern (?v=…, siehe tools/stamp.js) braucht der claude.ai-Link nicht
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8').replace(/\r\n/g, '\n').replace(/\?v=[a-z0-9]+"/g, '"');
 const title = html.match(/<title>[\s\S]*?<\/title>/)[0];
 const themeColors = html.match(/<meta name="theme-color"[^>]*>/g).join('\n');
 const stylesheet = html.match(/<link rel="stylesheet"[^>]*>/)[0];
