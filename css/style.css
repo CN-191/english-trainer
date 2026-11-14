@@ -430,3 +430,29 @@ a.btn { text-align: center; text-decoration: none; display: flex; align-items: c
 .account-row { gap: 6px; }
 .account-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; vertical-align: 1px; }
 .account-tools .btn-row .btn { flex: 1; }
+
+/* ===== Hausaufgabenheft ===== */
+.hw-row { gap: 12px; }
+.hw-check {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--text-3); background: none;
+  display: grid; place-items: center; padding: 0; cursor: pointer; color: transparent; font-size: 17px; font-weight: 700;
+  /* größere Tippfläche ohne größeren Kreis */
+  position: relative;
+}
+.hw-check::after { content: ""; position: absolute; inset: -8px; }
+.hw-check.done { background: var(--green); border-color: var(--green); color: #fff; }
+.hw-row.done .row-title { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--text-3); }
+.hw-book {
+  display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 6px; font-size: 12px; font-weight: 700;
+  vertical-align: 1px; background: var(--fill); color: var(--text-2);
+}
+.hw-book.hw-sb { color: var(--c-present); }
+.hw-book.hw-wb { color: var(--c-past); }
+.hw-del {
+  flex: none; min-width: 44px; min-height: 44px; border: 0; background: none; color: var(--text-3); font-size: 22px; cursor: pointer;
+}
+.hw-del.confirming { color: var(--red); font-size: 13px; font-weight: 600; outline: none; }
+.hw-form { gap: 10px; align-items: end; }
+.hw-form .field { min-width: 0; }
+.hw-form > .field { flex: 0 0 34%; }
+.hw-day { flex: 1; min-width: 0; display: grid; gap: 4px; font-size: 13px; color: var(--text-2); }

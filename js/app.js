@@ -4,6 +4,7 @@
   const app = {
     state: TT.store.load(),
     vocab: TT.vocabStore.load(),
+    homework: TT.homework.load(),
     session: null,
     vocabSession: null,
     lastSummary: null,
@@ -20,6 +21,11 @@
       }
       if (docs.includes(TT.vocabStore.OWN_DOC)) this.refreshOwn();
       for (const name of docs) TT.sync.touch(name);
+    },
+    // Hausaufgabenheft lokal speichern und zum Hochladen vormerken
+    saveHomework() {
+      if (!TT.homework.save(this.homework)) TT.ui.toast('Hausaufgaben konnten auf diesem Gerät nicht gespeichert werden.');
+      TT.sync.touch(TT.homework.DOC);
     },
     // Eigene Wörter des Lernstands in die Wortliste übernehmen (nach jeder Änderung daran)
     refreshOwn() {
@@ -98,6 +104,15 @@
       });
     }
     registerVocabSync();
+    // Hausaufgabenheft: ein Dokument je Konto, zusammengeführt pro Aufgabe
+    TT.sync.joinDoc(TT.homework.DOC, {
+      get: () => app.homework,
+      apply: (obj) => {
+        app.homework = TT.homework.sanitize(obj);
+        TT.homework.save(app.homework);
+      },
+      merge: (a, b) => TT.homework.merge(a, b),
+    });
     // Sync zuerst anstoßen: Der Status „verbindet“ gilt dann schon beim ersten Zeichnen (Vokabel-Übersicht wartet auf die Cloud).
     TT.sync.start(app);
     TT.router.start(document.getElementById('app'), document.getElementById('tabbar'));

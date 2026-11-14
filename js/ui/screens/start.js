@@ -41,6 +41,7 @@
             href: '#/training',
           })])
           : null,
+        TT.homeworkStartGroup ? TT.homeworkStartGroup(() => TT.router.refresh()) : null,
         h('div.card.hero', null,
           h('h2', null, 'Tägliches Training'),
           h('p', null, '15 gemischte Aufgaben aus ' + dailyText() + (due ? ` · ${due} Wiederholung${due === 1 ? '' : 'en'} fällig` : '')),
