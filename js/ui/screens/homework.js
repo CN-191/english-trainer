@@ -110,8 +110,13 @@
       subtitle: open.length ? null : done.length ? 'Alles erledigt' : 'Aufgaben aus der Stunde eintragen und abhaken',
       right: open.length > 5 ? '+' + (open.length - 5) : null,
     });
+    const lessons = TT.lessonLog ? TT.lessonLog.list(app.lessonLog) : [];
+    const stunden = ui.row({
+      href: '#/stunden', title: 'Stunden',
+      subtitle: lessons.length ? 'Zuletzt: ' + (lessons[0].title || lessons[0].day) : 'Zusammenfassungen deiner Englischstunden',
+    });
     return ui.group(open.length ? 'Hausaufgaben · ' + open.length + ' offen' : null,
-      open.slice(0, 5).map((x) => ui.homeworkRow(x, onChange, { showDay: false })).concat(link));
+      open.slice(0, 5).map((x) => ui.homeworkRow(x, onChange, { showDay: false })).concat(link, stunden));
   };
 
   TT.screens.homework = { render: page };

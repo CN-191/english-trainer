@@ -21,7 +21,7 @@ if (fs.existsSync(vocabDir)) {
 }
 // Lehrbuch StartUp 6: Unit-Daten und Buchwörter
 SOURCES.push('js/data/su6/book.js', 'js/data/su6/u01-03.js', 'js/data/su6/u04-06.js', 'js/data/su6/u07-10.js');
-SOURCES.push('js/learn/fsrs.js', 'js/learn/vocab-text.js', 'js/learn/vocab-store.js', 'js/learn/deck.js', 'js/learn/homework.js');
+SOURCES.push('js/learn/fsrs.js', 'js/learn/vocab-text.js', 'js/learn/vocab-store.js', 'js/learn/deck.js', 'js/learn/homework.js', 'js/learn/lesson-log.js');
 SOURCES.push('js/lessons/lessons.js', 'js/lessons/what-clauses.js', 'js/lessons/passive.js', 'js/lessons/pronouns.js', 'js/lessons/pronoun-replace.js', 'js/lessons/by-gerund.js');
 // Grammatik-Themen „Typische Fehler für Deutsche“: Register, dann die Themen je Kategorie
 SOURCES.push('js/lessons/bank.js', 'js/lessons/core/zeit.js', 'js/lessons/core/modal.js', 'js/lessons/core/if.js', 'js/lessons/core/verb1.js', 'js/lessons/core/verb2.js', 'js/lessons/core/satz.js', 'js/lessons/core/wort.js', 'js/lessons/core/praep.js');

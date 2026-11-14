@@ -5,6 +5,7 @@
     state: TT.store.load(),
     vocab: TT.vocabStore.load(),
     homework: TT.homework.load(),
+    lessonLog: TT.lessonLog.load(),
     session: null,
     vocabSession: null,
     lastSummary: null,
@@ -26,6 +27,11 @@
     saveHomework() {
       if (!TT.homework.save(this.homework)) TT.ui.toast('Hausaufgaben konnten auf diesem Gerät nicht gespeichert werden.');
       TT.sync.touch(TT.homework.DOC);
+    },
+    // Stunden (Zusammenfassungen) lokal speichern und zum Hochladen vormerken
+    saveLessonLog() {
+      if (!TT.lessonLog.save(this.lessonLog)) TT.ui.toast('Stunden konnten auf diesem Gerät nicht gespeichert werden.');
+      TT.sync.touch(TT.lessonLog.DOC);
     },
     // Eigene Wörter des Lernstands in die Wortliste übernehmen (nach jeder Änderung daran)
     refreshOwn() {
@@ -112,6 +118,15 @@
         TT.homework.save(app.homework);
       },
       merge: (a, b) => TT.homework.merge(a, b),
+    });
+    // Stunden: ein Dokument je Konto, zusammengeführt pro Stunde
+    TT.sync.joinDoc(TT.lessonLog.DOC, {
+      get: () => app.lessonLog,
+      apply: (obj) => {
+        app.lessonLog = TT.lessonLog.sanitize(obj);
+        TT.lessonLog.save(app.lessonLog);
+      },
+      merge: (a, b) => TT.lessonLog.merge(a, b),
     });
     // Sync zuerst anstoßen: Der Status „verbindet“ gilt dann schon beim ersten Zeichnen (Vokabel-Übersicht wartet auf die Cloud).
     TT.sync.start(app);

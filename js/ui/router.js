@@ -4,10 +4,10 @@
   const ROUTES = {
     start: 'start', ueben: 'practice', training: 'run', auswertung: 'summary', geschichten: 'stories',
     geschichte: 'story', grammatik: 'grammar', statistik: 'stats', einstellungen: 'settings', vokabeln: 'vocab',
-    unterricht: 'lesson', hausaufgaben: 'homework',
+    unterricht: 'lesson', hausaufgaben: 'homework', stunden: 'lessonLog',
   };
   const TABS = [['start', 'Start'], ['ueben', 'Üben'], ['vokabeln', 'Vokabeln'], ['grammatik', 'Grammatik'], ['statistik', 'Statistik']];
-  const TAB_OF = { einstellungen: 'start', geschichten: 'ueben', geschichte: 'ueben', auswertung: 'ueben', unterricht: 'ueben', hausaufgaben: 'start' };
+  const TAB_OF = { einstellungen: 'start', geschichten: 'ueben', geschichte: 'ueben', auswertung: 'ueben', unterricht: 'ueben', hausaufgaben: 'start', stunden: 'start' };
   const HIDE_TABS = ['training', 'geschichte'];
 
   let appEl = null;
